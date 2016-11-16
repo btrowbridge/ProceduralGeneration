@@ -1,0 +1,20 @@
+fileFormatVersion: 2
+guid: 78a0d143d60d8df428c7616a128d2f3a
+timeCreated: 1479325389
+licenseType: Free
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences:
+  - WaterCube: {fileID: 1000011345636436, guid: aaf669fa0d4188747951f652dd4d7a70,
+      type: 2}
+  - DirtCube: {fileID: 1000011345636436, guid: 40812b7cdd0cb2f4097513ca0f4ebe13, type: 2}
+  - SnowCube: {fileID: 1000011345636436, guid: e21510fcdb8712649b5ddef873f64b00, type: 2}
+  - GrassCube: {fileID: 1000011345636436, guid: 249f4b7a379961947a55cde532783198,
+      type: 2}
+  - StoneCube: {fileID: 1000011345636436, guid: 48237a3bb934cc547b9c3e8a21a70c7e,
+      type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
