@@ -34,7 +34,7 @@ public class MinecraftLevelGenerator : MonoBehaviour {
         {
             for (int x = 0; x < LevelWidth; x++)
             {
-                float y = (perlinNoise[z][x] * HeightScale);
+                float y = (perlinNoise[z][x] * HeightScale) + (MinDepth/2);
                 Vector3 blockPosition = new Vector3(x, Mathf.RoundToInt(y), z);
                 CreateBlock(blockPosition);
 
@@ -43,7 +43,7 @@ public class MinecraftLevelGenerator : MonoBehaviour {
     }
     private void CreateBlock(Vector3 surfacePosition)
     {
-        GameObject surfaceBlock = null;
+        GameObject surfaceBlock = GameObject.CreatePrimitive(PrimitiveType.Cube);
 
         if (surfacePosition.y >= SnowLevel)
         {
