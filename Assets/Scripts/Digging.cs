@@ -11,12 +11,15 @@ public class Digging : MonoBehaviour {
     [Range(2, 10)]
     public float DigRange;
 
-	// Update is called once per frame
-	void Update () {
-        if (Input.GetButton("Fire1") && Time.time >= nextDig)
+
+    private float m_NextDig = 0.0F;
+
+    // Update is called once per frame
+    void Update () {
+        if (Input.GetButton("Fire1") && Time.time >= m_NextDig)
         {
             //Debug.Log("Time: " + Time.time + ", nextDig: " + nextDig);
-            nextDig = Time.time + DigRate;
+            m_NextDig = Time.time + DigRate;
             Dig();
         }
     }
@@ -24,6 +27,7 @@ public class Digging : MonoBehaviour {
     private void Dig()
     {
         RaycastHit hitInfo;
+        
         if (Physics.Raycast(new Ray(transform.position, transform.forward), out hitInfo, DigRange)) 
         {
             var blockProperties = hitInfo.collider.gameObject.GetComponent<BlockProperties>();
@@ -34,5 +38,5 @@ public class Digging : MonoBehaviour {
         }
     }
 
-    private float nextDig = 0.0F;
+    
 }

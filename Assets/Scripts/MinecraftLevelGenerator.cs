@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System;
 
+
 public class MinecraftLevelGenerator : MonoBehaviour {
 
     public int WaterLevel = 0;
@@ -19,6 +20,8 @@ public class MinecraftLevelGenerator : MonoBehaviour {
 
     [Range(1, 8)]
     public int OctaveCount = 5;
+
+    public float WaterFloodDelay = 1;
 
     public GameObject WaterCube;
     public GameObject DirtCube;
@@ -66,17 +69,17 @@ public class MinecraftLevelGenerator : MonoBehaviour {
             for (int x = 0; x < LevelWidth; x++)
             {
                 float y = (perlinNoise[z][x] * HeightScale) + MinDepth;
-                Vector3 blockPosition = new Vector3(x, Mathf.RoundToInt(y), z);
-                CreateBlock(blockPosition);
+                Vector3 columnPosition = new Vector3(x, Mathf.RoundToInt(y), z);
+                SpawnColumn(columnPosition);
 
             }
         }
     }
-    private void CreateBlock(Vector3 surfacePosition)
+    private void SpawnColumn(Vector3 surfacePosition)
     {
         GameObject surfaceBlock = null;
 
-        if (surfacePosition.y >= SnowLevel)
+        if (surfacePosition.y >= SnowLevel && surfacePosition.y > WaterLevel)
         {
             surfaceBlock = SnowCube;
         } else if (surfacePosition.y < WaterLevel)
@@ -115,16 +118,31 @@ public class MinecraftLevelGenerator : MonoBehaviour {
         }
     }
 
-    public void SpawnBlock(GameObject block, Vector3 position)
+    public GameObject SpawnBlock(GameObject block, Vector3 position)
     {
         var instance = GameObject.Instantiate(block, position, Quaternion.identity) as GameObject;
         m_BlockMap.Add(position, instance);
         instance.name += position.ToString();
+        return instance;
     }
+
     public void PlaceBlockByType(BlockType blockType, Vector3 position)
     {
         GameObject block = m_BlockTypeObject[blockType];
-        SpawnBlock(block, position);
+
+        GameObject existingBlock;
+
+        if(m_BlockMap.TryGetValue(position, out existingBlock))
+        {
+            if (existingBlock.layer == LayerMask.NameToLayer("Water"))
+            {
+                m_BlockMap.Remove(position);
+                Destroy(existingBlock);
+            }
+        }
+
+        var instance = SpawnBlock(block, position);
+        TryOccludeNeighbors(instance);
     }
 
     #endregion
@@ -141,20 +159,19 @@ public class MinecraftLevelGenerator : MonoBehaviour {
        new Vector3(-1, 0, 0)
     };
 
-    private bool IsSurrounded (GameObject go)
+    private bool IsSurrounded (GameObject blockInstance)
     {
         foreach (Vector3 dir in NeighborDirections)
         {
-            Vector3 queryPosition = go.transform.position + dir;
+            Vector3 queryPosition = blockInstance.transform.position + dir;
 
-            GameObject block;
-            if (!m_BlockMap.TryGetValue(queryPosition,out block))
+            GameObject neighborBlock;
+            if (!m_BlockMap.TryGetValue(queryPosition, out neighborBlock))
             {
                 return false;
                 
             }
-            else if(block.tag == "Water" &&
-                   go.tag != "Water")
+            else if (neighborBlock.tag == "Water" && blockInstance.tag != "Water")
             {
                 return false;
             }
@@ -164,25 +181,44 @@ public class MinecraftLevelGenerator : MonoBehaviour {
 
     private void MassOcclusionTest()
     {
-        foreach(var go in m_BlockMap)
+        foreach(var blockPair in m_BlockMap)
         {
+            TesOcclusion(blockPair.Value);
 
-            if (IsSurrounded(go.Value))
-            {
-                go.Value.GetComponent<BlockProperties>().SetOcclusion(true);
-            }
         }
     }
 
-    public void UnoccludeNeighbors(GameObject go)
+    private void TesOcclusion(GameObject block)
+    {
+        if (IsSurrounded(block))
+        {
+            block.GetComponent<BlockProperties>().SetOcclusion(true);
+        }
+    }
+
+    public void UnoccludeNeighbors(GameObject blockCenter)
     {
         foreach(Vector3 dir in NeighborDirections)
         {
-            Vector3 queryPosition = go.transform.position + dir;
+            Vector3 queryPosition = blockCenter.transform.position + dir;
             GameObject neighbor;
             if (m_BlockMap.TryGetValue(queryPosition,out neighbor))
             {
+                
                 neighbor.GetComponent<BlockProperties>().SetOcclusion(false);
+            }
+
+        }
+    }
+    private void TryOccludeNeighbors(GameObject blockCenter)
+    {
+        foreach (Vector3 dir in NeighborDirections)
+        {
+            Vector3 queryPosition = blockCenter.transform.position + dir;
+            GameObject neighbor;
+            if (m_BlockMap.TryGetValue(queryPosition, out neighbor))
+            {
+                TesOcclusion(neighbor);
             }
 
         }
@@ -192,6 +228,40 @@ public class MinecraftLevelGenerator : MonoBehaviour {
     public void RemoveBlock(GameObject objectToRemove)
     {
         m_BlockMap.Remove(objectToRemove.transform.position);
+
+        StartCoroutine(TrySpawnWaterAfterDelay(objectToRemove.transform.position, WaterFloodDelay));
     }
 
+    private IEnumerator TrySpawnWaterAfterDelay(Vector3 position, float time)
+    {
+        yield return new WaitForSeconds(time);
+
+        GameObject block = null;
+
+        if (!m_BlockMap.TryGetValue(position, out block) && IsNextToWater(position))
+        {
+            PlaceBlockByType(BlockType.Water, position);
+        }
+    }
+
+    private bool IsNextToWater(Vector3 position)
+    {
+        foreach (Vector3 dir in NeighborDirections)
+        {
+            //DontCheckBelow
+            if (dir == Vector3.down) continue;
+
+            Vector3 queryPosition = position + dir;
+
+            GameObject neighborBlock;
+            if (m_BlockMap.TryGetValue(queryPosition, out neighborBlock))
+            {
+                if (neighborBlock.tag == "Water")
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }

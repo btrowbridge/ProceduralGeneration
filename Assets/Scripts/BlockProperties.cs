@@ -29,7 +29,7 @@ public class BlockProperties : MonoBehaviour {
     void Start ()
     {
         levelGenerator = GameObject.FindGameObjectWithTag("LevelGenerator").GetComponent<MinecraftLevelGenerator>();
-        if (meshRenderer == null) meshRenderer = GetComponent<MeshRenderer>();
+        if (meshRenderer == null) meshRenderer = GetComponentInChildren<MeshRenderer>();
         audioManager = GameObject.FindGameObjectWithTag("AudioManager").GetComponent<AudioManager>();
 
     }
@@ -39,18 +39,21 @@ public class BlockProperties : MonoBehaviour {
 
     public void DigHit(float dmg)
     {
-        audioManager.PlaySoundAtLocation(TypeOfBlock.ToString(), transform.position);
+        if (!IsIndestructable) {
+            audioManager.PlaySoundAtLocation(TypeOfBlock.ToString(), transform.position);
 
-        Health -= dmg;
-        if (Health <= 0 && !IsIndestructable)
-        {
-            KillCube();
+            Health -= dmg;
+            if (Health <= 0)
+            {
+
+                KillCube();
+            }
         }
     }
 
     public void SetOcclusion(bool isOccluded)
     {
-        if (meshRenderer == null) meshRenderer = GetComponent<MeshRenderer>();
+        if (meshRenderer == null) meshRenderer = GetComponentInChildren<MeshRenderer>();
         meshRenderer.enabled = !isOccluded;
     }
     private void KillCube()
